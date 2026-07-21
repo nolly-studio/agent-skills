@@ -18,6 +18,7 @@ This file provides guidance for AI coding agents working in this repository.
 - [Architecture & Workspace Structure](docs/agents/architecture.md)
 - [Code Style & Patterns](docs/agents/code-style.md)
 - [Lessons Learned](docs/agents/lessons-learned.md)
+- [Design Language](DESIGN.md) <!-- only if the repo has a frontend and a DESIGN.md (see the design-md skill); delete otherwise -->
 
 ## <Critical domain sections — only what exists here>
 

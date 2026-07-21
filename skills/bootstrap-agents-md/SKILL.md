@@ -79,7 +79,7 @@ docs/
 3. Write `AGENTS.md` from `references/agents-md-template.md`; then symlink: `ln -sf AGENTS.md CLAUDE.md`. If symlinks are not viable (e.g. Windows contributors without dev-mode), create `CLAUDE.md` containing only: `See AGENTS.md — single source of truth.`
 4. Add `docs/release.md`, `docs/plans/README.md`, and seed `docs/agents/lessons-learned.md` from their templates
 5. Create `.agents/skills/plan-mode/SKILL.md` (verbatim from `references/skill-plan-mode.md`, stripping the template preamble) and `.agents/skills/code-review/SKILL.md` (from `references/skill-code-review.md`, adapting commands to this repo)
-6. Add stack-specific skills only if the dependency is verified in `package.json` (AI SDK, workflow/durable-execution, React best practices, design-engineering, etc.). Do NOT port product-specific skills from other codebases.
+6. Add stack-specific skills only if the dependency is verified in `package.json` (AI SDK, workflow/durable-execution, React best practices, etc.). Do NOT port product-specific skills from other codebases. If the repo has a frontend (react/next/vue/svelte/tailwind verified in `package.json`), follow the `design-md` skill to create `DESIGN.md` and `.agents/skills/frontend-design/` — it classifies the repo first and never overwrites an existing design language.
 7. Run the **verification pass** below
 8. Report a short summary: files created, what was adapted vs skipped, conflicts found with existing docs, recommended next skills for this stack
 

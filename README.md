@@ -45,6 +45,42 @@ docs/
 5. Plan before large changes, verify with project CI
 6. Accurate short docs over impressive long docs
 
+### design-md
+
+Create or update a repo's root `DESIGN.md` — a living design-language contract for AI agents and humans — plus a portable `frontend-design` craft skill (typography, surfaces, motion doctrine). It classifies the repo before writing anything, so it never overwrites a project's current design.
+
+**Use when:**
+
+- Documenting an established design language so agents build on-brand UI
+- Consolidating scattered design docs / brand guides into one source of truth
+- Proposing a design direction for a greenfield frontend (with user approval)
+- Running the `bootstrap-agents-md` skill on a repo with a frontend (it calls into this skill)
+
+**Three modes, chosen by evidence:**
+
+1. **Document** — an established design language exists: extract it into `DESIGN.md`, citing real files and tokens. Nothing about the design changes
+2. **Merge** — design docs already exist: preserve unique local rules, deduplicate, keep one source of truth
+3. **Propose** — greenfield: write a one-page proposal to `docs/plans/design-language.md` and **stop for user approval** before writing the full doc
+
+**What it creates in the target repo:**
+
+```
+DESIGN.md                              # root design-language contract (living document)
+.agents/
+  skills/
+    frontend-design/SKILL.md           # portable craft doctrine (typography, surfaces, motion)
+docs/
+  plans/
+    design-language.md                 # propose mode only: the approved direction
+```
+
+**Key principles:**
+
+1. The doc is downstream of the code (or of user approval) — never invented and presented as fact
+2. Never restyle existing components to match the doc; describing is not a refactor mandate
+3. Budgets over vibes — explicit limits ("one accent pairing per view") that agents can verify
+4. Every token, font, and utility named in the doc must exist in the codebase
+
 ## Installation
 
 ### skills CLI (recommended — all supported agents)
@@ -57,12 +93,14 @@ Or install a specific skill without the interactive prompts:
 
 ```bash
 npx skills add nolly-studio/agent-skills --skill bootstrap-agents-md -y
+npx skills add nolly-studio/agent-skills --skill design-md -y
 ```
 
 ### Claude Code (manual)
 
 ```bash
 cp -r skills/bootstrap-agents-md ~/.claude/skills/
+cp -r skills/design-md ~/.claude/skills/
 ```
 
 ### claude.ai
@@ -87,6 +125,10 @@ Set up AGENTS.md and agent docs following our standard structure
 Port our agent operating system to this project
 ```
 
+```
+Add a DESIGN.md documenting our design language
+```
+
 ## Skill Structure
 
 ```
@@ -102,6 +144,11 @@ skills/
       release-template.md                # docs/release.md
       skill-plan-mode.md                 # portable plan-mode skill
       skill-code-review.md               # portable code-review skill
+  design-md/
+    SKILL.md                             # audit → classify → gate → write process
+    references/
+      design-md-template.md              # DESIGN.md skeleton
+      skill-frontend-design.md           # portable frontend-design craft skill
 ```
 
 The agent reads `SKILL.md` for the process (evidence gathering, deliverables, verification pass) and pulls each template from `references/` at the step that uses it.
