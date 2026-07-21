@@ -1,0 +1,7 @@
+{
+  "name": "@nolly-studio/agent-skills",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A collection of skills for AI coding agents. Installable via npx skills.",
+  "license": "MIT"
+}
