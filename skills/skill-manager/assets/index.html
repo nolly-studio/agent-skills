@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skill Manager</title>
+<style>
+  :root {
+    --bg: #f7f7f5;
+    --surface: #ffffff;
+    --text: #1a1a18;
+    --muted: #6b6b66;
+    --faint: #9a9a94;
+    --line: #e4e4df;
+    --track: #ecece7;
+    --accent: #1a1a18;
+    --on: #1f7a4d;
+    --off: #b4432f;
+    --mid: #8a6a12;
+    --focus: #3b6ee8;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141413;
+      --surface: #1c1c1a;
+      --text: #ededea;
+      --muted: #a3a39d;
+      --faint: #74746e;
+      --line: #2c2c29;
+      --track: #262624;
+      --accent: #ededea;
+      --on: #4cc38a;
+      --off: #ef7a63;
+      --mid: #d9b450;
+      --focus: #7aa2ff;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.45 ui-sans-serif, -apple-system, "SF Pro Text", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  main { max-width: 920px; margin: 0 auto; padding: 40px 16px 64px; }
+  h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 24px; max-width: 64ch; }
+  .sub code, .legend code { font: 12.5px ui-monospace, "SF Mono", Menlo, monospace; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line);
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
+  .stat { background: var(--surface); padding: 12px 14px; }
+  .stat b { display: block; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stat span { color: var(--muted); font-size: 12px; }
+
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  .search { flex: 1 1 100%; min-width: 0; height: 34px; padding: 0 12px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; }
+  .search::placeholder { color: var(--faint); }
+  .chips { display: flex; gap: 4px; margin-right: auto; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  .chip, .bulk { height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--surface); color: var(--muted); white-space: nowrap; }
+  .chip[aria-pressed="true"] { color: var(--text); border-color: var(--text); }
+  .bulk:hover, .chip:hover { color: var(--text); }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  .list { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+  .row { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center;
+    padding: 12px 14px; border-top: 1px solid var(--line); }
+  .row:first-child { border-top: 0; }
+  .row.dim .name, .row.dim .desc { color: var(--faint); }
+  .name { font: 500 13px ui-monospace, "SF Mono", Menlo, monospace; display: flex; gap: 8px; align-items: baseline; }
+  .size { font: 11px ui-sans-serif, system-ui; color: var(--faint); font-variant-numeric: tabular-nums; }
+  .desc { color: var(--muted); font-size: 13px; margin-top: 2px; display: -webkit-box;
+    -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+  .seg { display: inline-grid; grid-template-columns: repeat(4, auto); background: var(--track);
+    border-radius: 8px; padding: 2px; }
+  .seg button { border: 0; background: transparent; color: var(--muted); font-size: 12px;
+    height: 26px; padding: 0 10px; border-radius: 6px; white-space: nowrap; }
+  .seg button:hover { color: var(--text); }
+  .seg button[aria-checked="true"] { background: var(--surface); color: var(--text);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.12); }
+  .seg button[data-mode="on"][aria-checked="true"] { color: var(--on); }
+  .seg button[data-mode="off"][aria-checked="true"] { color: var(--off); }
+  .seg button[data-mode="name-only"][aria-checked="true"],
+  .seg button[data-mode="user-invocable-only"][aria-checked="true"] { color: var(--mid); }
+
+  .empty { padding: 32px; text-align: center; color: var(--muted); }
+  .legend { color: var(--muted); font-size: 12.5px; margin-top: 16px; display: grid; gap: 4px; }
+  .legend b { color: var(--text); font-weight: 500; }
+  .toast { position: fixed; left: 50%; bottom: 20px; transform: translate(-50%, 8px); opacity: 0;
+    background: var(--text); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 13px;
+    transition: opacity 160ms ease-out, transform 160ms ease-out; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  @media (max-width: 640px) {
+    main { padding-top: 24px; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .row { grid-template-columns: 1fr; gap: 8px; }
+    .seg { width: 100%; grid-template-columns: repeat(4, 1fr); }
+    .seg button { padding: 0 4px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Skill manager</h1>
+  <p class="sub">Your personal skills in <code>~/.claude/skills</code>. Each change is saved to <code>skillOverrides</code> in <code>~/.claude/settings.json</code> right away. New sessions pick it up.</p>
+
+  <section class="stats" aria-label="Summary">
+    <div class="stat"><b id="s-total">-</b><span>skills</span></div>
+    <div class="stat"><b id="s-on">-</b><span>fully on</span></div>
+    <div class="stat"><b id="s-off">-</b><span>off</span></div>
+    <div class="stat"><b id="s-chars">-</b><span>chars of descriptions per session</span></div>
+  </section>
+
+  <div class="toolbar">
+    <input class="search" id="q" type="search" placeholder="Search skills" aria-label="Search skills" autocomplete="off">
+    <div class="chips" role="group" aria-label="Filter">
+      <button class="chip" data-filter="all" aria-pressed="true">All</button>
+      <button class="chip" data-filter="on" aria-pressed="false">On</button>
+      <button class="chip" data-filter="limited" aria-pressed="false">Limited</button>
+      <button class="chip" data-filter="off" aria-pressed="false">Off</button>
+    </div>
+    <button class="bulk" data-bulk="off">Turn shown off</button>
+    <button class="bulk" data-bulk="on">Turn shown on</button>
+  </div>
+
+  <div class="list" id="list" aria-live="polite"></div>
+
+  <div class="legend">
+    <div><b>On</b>: listed with its description, so Claude can pick it on its own or you can run <code>/name</code>.</div>
+    <div><b>Name only</b>: listed by name without the description. Cheaper, but Claude picks it less reliably.</div>
+    <div><b>Slash only</b>: hidden from Claude. Runs only when you type <code>/name</code>.</div>
+    <div><b>Off</b>: not loaded at all.</div>
+  </div>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+  const MODES = [
+    ["on", "On"],
+    ["name-only", "Name only"],
+    ["user-invocable-only", "Slash only"],
+    ["off", "Off"],
+  ];
+  let skills = [];
+  let filter = "all";
+  const $ = (id) => document.getElementById(id);
+
+  const matches = (s) => {
+    const q = $("q").value.trim().toLowerCase();
+    if (q && !s.name.includes(q) && !s.description.toLowerCase().includes(q)) return false;
+    if (filter === "on") return s.mode === "on";
+    if (filter === "off") return s.mode === "off";
+    if (filter === "limited") return s.mode === "name-only" || s.mode === "user-invocable-only";
+    return true;
+  };
+
+  const esc = (t) => t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+  function render() {
+    const shown = skills.filter(matches);
+    $("list").innerHTML = shown.length
+      ? shown.map((s) => `
+        <div class="row${s.mode === "off" ? " dim" : ""}">
+          <div>
+            <div class="name">${esc(s.name)}<span class="size">${s.description.length.toLocaleString()} chars</span></div>
+            <div class="desc" title="${esc(s.description)}">${esc(s.description) || "No description"}</div>
+          </div>
+          <div class="seg" role="radiogroup" aria-label="${esc(s.name)} mode">
+            ${MODES.map(([m, label]) => `<button role="radio" data-name="${esc(s.name)}" data-mode="${m}" aria-checked="${s.mode === m}">${label}</button>`).join("")}
+          </div>
+        </div>`).join("")
+      : `<div class="empty">No skills match.</div>`;
+    $("s-total").textContent = skills.length;
+    $("s-on").textContent = skills.filter((s) => s.mode === "on").length;
+    $("s-off").textContent = skills.filter((s) => s.mode === "off").length;
+    $("s-chars").textContent = skills
+      .filter((s) => s.mode === "on")
+      .reduce((n, s) => n + s.description.length, 0)
+      .toLocaleString();
+  }
+
+  let toastTimer;
+  function toast(text) {
+    $("toast").textContent = text;
+    $("toast").classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => $("toast").classList.remove("show"), 1600);
+  }
+
+  async function save(changes) {
+    const res = await fetch("/api/skills", {
+      body: JSON.stringify(changes),
+      headers: { "content-type": "application/json" },
+      method: "POST",
+    });
+    const data = await res.json();
+    if (!res.ok) return toast(data.error);
+    skills = data;
+    render();
+    const n = Object.keys(changes).length;
+    toast(n === 1 ? "Saved" : `Saved ${n} skills`);
+  }
+
+  $("list").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-mode]");
+    if (b && b.getAttribute("aria-checked") !== "true") save({ [b.dataset.name]: b.dataset.mode });
+  });
+  document.querySelectorAll(".chip").forEach((c) =>
+    c.addEventListener("click", () => {
+      filter = c.dataset.filter;
+      document.querySelectorAll(".chip").forEach((x) => x.setAttribute("aria-pressed", x === c));
+      render();
+    }),
+  );
+  document.querySelectorAll(".bulk").forEach((b) =>
+    b.addEventListener("click", () => {
+      const mode = b.dataset.bulk;
+      const targets = skills.filter(matches).filter((s) => s.mode !== mode);
+      if (!targets.length) return toast("Nothing to change");
+      if (!confirm(`Set ${targets.length} skills to ${mode}?`)) return;
+      save(Object.fromEntries(targets.map((s) => [s.name, mode])));
+    }),
+  );
+  $("q").addEventListener("input", render);
+
+  fetch("/api/skills").then((r) => r.json()).then((d) => { skills = d; render(); });
+</script>
+</body>
+</html>

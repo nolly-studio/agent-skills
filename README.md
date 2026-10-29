@@ -81,6 +81,44 @@ docs/
 3. Budgets over vibes — explicit limits ("one accent pairing per view") that agents can verify
 4. Every token, font, and utility named in the doc must exist in the codebase
 
+### skill-manager
+
+Install a one-click Mac app for turning Claude Code skills on and off. It lists every skill in `~/.claude/skills` with how many characters its description adds to each session, and sets each one to On, Name only, Slash only or Off. Every change is written to the official `skillOverrides` setting in `~/.claude/settings.json`, so nothing is moved or deleted.
+
+**Use when:**
+
+- You have dozens of skills installed and want a smaller system prompt
+- You want some skills to run only when you type `/name`
+- You want to see which skills cost the most context
+
+**What it installs:**
+
+```
+~/.claude/skill-manager/
+  server.ts                        # Bun server on 127.0.0.1:4477
+  index.html                       # the toggle page
+  open.sh                          # starts the server if needed, opens the page
+/Applications/Skill Manager.app    # Dock and Spotlight launcher (optional Dock pin)
+```
+
+Requires macOS and [Bun](https://bun.sh). Your `settings.json` is backed up before the first change.
+
+### dock-app
+
+The general pattern behind `skill-manager`: turn any local file, config or folder on your Mac into a one-click app in the Dock. A small Bun server bound to localhost reads and writes the files, a single HTML page is the UI, and a `.app` launcher starts the server on demand. No Electron, no build step, nothing on the network.
+
+**Use when:**
+
+- You want a UI for something on your own machine that a web artifact cannot reach (settings, dotfiles, local data, scripts)
+- You say "make this an app", "put it on my Dock" or "one click to open"
+
+**Process:**
+
+1. Find the source of truth, preferring an official setting over moving files
+2. Build the server and page from the starter files in `assets/`
+3. Wrap the launcher in a `.app` with `scripts/make-app.sh`, optionally pinned to the Dock
+4. Verify end to end: API, a change and its revert, a cold start from the Dock, and the page in light, dark and at phone width
+
 ## Installation
 
 ### skills CLI (recommended — all supported agents)
@@ -94,6 +132,8 @@ Or install a specific skill without the interactive prompts:
 ```bash
 npx skills add nolly-studio/agent-skills --skill bootstrap-agents-md -y
 npx skills add nolly-studio/agent-skills --skill design-md -y
+npx skills add nolly-studio/agent-skills --skill skill-manager -y
+npx skills add nolly-studio/agent-skills --skill dock-app -y
 ```
 
 ### Claude Code (manual)
@@ -101,6 +141,8 @@ npx skills add nolly-studio/agent-skills --skill design-md -y
 ```bash
 cp -r skills/bootstrap-agents-md ~/.claude/skills/
 cp -r skills/design-md ~/.claude/skills/
+cp -r skills/skill-manager ~/.claude/skills/
+cp -r skills/dock-app ~/.claude/skills/
 ```
 
 ### claude.ai
@@ -129,6 +171,14 @@ Port our agent operating system to this project
 Add a DESIGN.md documenting our design language
 ```
 
+```
+Give me a toggle UI for my Claude Code skills
+```
+
+```
+Make a Dock app for editing this config file
+```
+
 ## Skill Structure
 
 ```
@@ -149,6 +199,14 @@ skills/
     references/
       design-md-template.md              # DESIGN.md skeleton
       skill-frontend-design.md           # portable frontend-design craft skill
+  skill-manager/
+    SKILL.md                             # install, verify, uninstall
+    scripts/install.sh                   # copies assets, builds the app, optional Dock pin
+    assets/                              # server.ts, index.html, open.sh
+  dock-app/
+    SKILL.md                             # source of truth -> build -> wrap -> verify
+    scripts/make-app.sh                  # wraps any launcher in a .app, optional Dock pin
+    assets/                              # starter server.ts and open.sh
 ```
 
 The agent reads `SKILL.md` for the process (evidence gathering, deliverables, verification pass) and pulls each template from `references/` at the step that uses it.
