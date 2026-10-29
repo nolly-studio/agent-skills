@@ -1,215 +1,207 @@
 # Agent Skills
 
-A collection of skills for AI coding agents. Skills are packaged instructions that extend agent capabilities.
-
-Skills follow the [Agent Skills format](https://github.com/vercel-labs/skills) and are installable with the [`skills` CLI](https://skills.sh).
-
-## Available Skills
-
-### bootstrap-agents-md
-
-Bootstrap a repository's AI coding agent operating system: a root `AGENTS.md` + `CLAUDE.md` entrypoint, deeper docs under `docs/agents/` (architecture, code style, lessons learned), durable plans under `docs/plans/`, a `docs/release.md`, and portable `plan-mode` / `code-review` skills — all rewritten from evidence gathered in the target repo, never copied blindly.
-
-**Use when:**
-
-- Setting up agent docs for a new project
-- Porting a proven agent operating system to an existing codebase
-- Consolidating scattered `AGENTS.md` / `CLAUDE.md` / Cursor rules into one source of truth
-- Establishing living-docs discipline (lessons learned, plans, script-first commands)
-
-**What it creates in the target repo:**
-
-```
-AGENTS.md                          # root entrypoint (living document)
-CLAUDE.md                          # symlink -> AGENTS.md
-docs/
-  agents/
-    architecture.md                # real system map, written from evidence
-    code-style.md                  # the repo's actual conventions
-    lessons-learned.md             # seeded, append-only knowledge base
-  plans/
-    README.md                      # how durable plans work
-  release.md                       # how the project ships
-.agents/
-  skills/
-    plan-mode/SKILL.md             # system-aware planning doctrine
-    code-review/SKILL.md           # context-first review doctrine
-```
-
-**Key principles:**
-
-1. Evidence first — every doc claim traces to something observed in the target repo
-2. Port the system and doctrine, rewrite the content
-3. Living docs — agents append lessons when they learn something non-obvious
-4. Scripts over raw tools — commands come from `package.json`, not generic binaries
-5. Plan before large changes, verify with project CI
-6. Accurate short docs over impressive long docs
-
-### design-md
-
-Create or update a repo's root `DESIGN.md` — a living design-language contract for AI agents and humans — plus a portable `frontend-design` craft skill (typography, surfaces, motion doctrine). It classifies the repo before writing anything, so it never overwrites a project's current design.
-
-**Use when:**
-
-- Documenting an established design language so agents build on-brand UI
-- Consolidating scattered design docs / brand guides into one source of truth
-- Proposing a design direction for a greenfield frontend (with user approval)
-- Running the `bootstrap-agents-md` skill on a repo with a frontend (it calls into this skill)
-
-**Three modes, chosen by evidence:**
-
-1. **Document** — an established design language exists: extract it into `DESIGN.md`, citing real files and tokens. Nothing about the design changes
-2. **Merge** — design docs already exist: preserve unique local rules, deduplicate, keep one source of truth
-3. **Propose** — greenfield: write a one-page proposal to `docs/plans/design-language.md` and **stop for user approval** before writing the full doc
-
-**What it creates in the target repo:**
-
-```
-DESIGN.md                              # root design-language contract (living document)
-.agents/
-  skills/
-    frontend-design/SKILL.md           # portable craft doctrine (typography, surfaces, motion)
-docs/
-  plans/
-    design-language.md                 # propose mode only: the approved direction
-```
-
-**Key principles:**
-
-1. The doc is downstream of the code (or of user approval) — never invented and presented as fact
-2. Never restyle existing components to match the doc; describing is not a refactor mandate
-3. Budgets over vibes — explicit limits ("one accent pairing per view") that agents can verify
-4. Every token, font, and utility named in the doc must exist in the codebase
-
-### skill-manager
-
-Install a one-click Mac app for turning Claude Code skills on and off. It lists every skill in `~/.claude/skills` with how many characters its description adds to each session, and sets each one to On, Name only, Slash only or Off. Every change is written to the official `skillOverrides` setting in `~/.claude/settings.json`, so nothing is moved or deleted.
-
-**Use when:**
-
-- You have dozens of skills installed and want a smaller system prompt
-- You want some skills to run only when you type `/name`
-- You want to see which skills cost the most context
-
-**What it installs:**
-
-```
-~/.claude/skill-manager/
-  server.ts                        # Bun server on 127.0.0.1:4477
-  index.html                       # the toggle page
-  open.sh                          # starts the server if needed, opens the page
-/Applications/Skill Manager.app    # Dock and Spotlight launcher (optional Dock pin)
-```
-
-Requires macOS and [Bun](https://bun.sh). Your `settings.json` is backed up before the first change.
-
-### dock-app
-
-The general pattern behind `skill-manager`: turn any local file, config or folder on your Mac into a one-click app in the Dock. A small Bun server bound to localhost reads and writes the files, a single HTML page is the UI, and a `.app` launcher starts the server on demand. No Electron, no build step, nothing on the network.
-
-**Use when:**
-
-- You want a UI for something on your own machine that a web artifact cannot reach (settings, dotfiles, local data, scripts)
-- You say "make this an app", "put it on my Dock" or "one click to open"
-
-**Process:**
-
-1. Find the source of truth, preferring an official setting over moving files
-2. Build the server and page from the starter files in `assets/`
-3. Wrap the launcher in a `.app` with `scripts/make-app.sh`, optionally pinned to the Dock
-4. Verify end to end: API, a change and its revert, a cold start from the Dock, and the page in light, dark and at phone width
-
-## Installation
-
-### skills CLI (recommended — all supported agents)
+Skills you install once and then use by asking for them in plain words. They work with Claude Code and other agents that read the [Agent Skills format](https://github.com/vercel-labs/skills).
 
 ```bash
 npx skills add nolly-studio/agent-skills
 ```
 
-Or install a specific skill without the interactive prompts:
+| Skill | What it does | Ask your agent |
+| --- | --- | --- |
+| [**skill-manager**](#skill-manager) | Puts an app in your Dock for turning Claude Code skills on and off | "Install the skill manager" |
+| [**dock-app**](#dock-app) | Turns any file or setting on your Mac into a one-click app | "Make a Dock app for this config" |
+| [**bootstrap-agents-md**](#bootstrap-agents-md) | Writes `AGENTS.md` and agent docs for a repo, from what is really in it | "Bootstrap the agent docs for this repo" |
+| [**design-md**](#design-md) | Writes a `DESIGN.md` that tells agents how your UI should look | "Add a DESIGN.md for this project" |
+
+---
+
+## skill-manager
+
+**Too many skills slowing your agent down? Click an icon in your Dock and switch them off.**
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/skill-manager-dark.png">
+  <img alt="The skill manager page: a list of skills, each with On, Name only, Slash only and Off buttons, under a summary of how many are on and how many characters they add to each session" src="images/skill-manager-light.png">
+</picture>
+
+Every skill you install adds its description to every Claude Code session, whether you use it that day or not. With 100 skills, that is tens of thousands of characters before you type a word. This skill installs a small Mac app that shows each skill, how much it costs, and a switch to turn it down or off.
+
+### See it work
+
+![Turning two skills off, setting one to slash only, then filtering to the skills that are off](images/skill-manager-demo.gif)
+
+### Get it in 3 steps
+
+1. **Install the skill**
+
+   ```bash
+   npx skills add nolly-studio/agent-skills --skill skill-manager -y
+   ```
+
+2. **Ask Claude Code** to "install the skill manager and put it in my Dock".
+3. **Click the Skill Manager icon** in your Dock. The page opens in your browser.
+
+Changes save the moment you click. New sessions use them.
+
+### The four switches
+
+| Switch | Claude sees | Cost per session | Use it for |
+| --- | --- | --- | --- |
+| **On** | Name and description | Full description | Skills you want Claude to reach for on its own |
+| **Name only** | Name | A few characters | Skills with names that explain themselves |
+| **Slash only** | Nothing | Nothing | Skills you start yourself by typing `/name` |
+| **Off** | Nothing | Nothing | Skills you are not using right now |
+
+Nothing is moved or deleted. Each switch writes Claude Code's own `skillOverrides` setting in `~/.claude/settings.json`, which is backed up before the first change.
+
+### What it installs
+
+```
+/Applications/Skill Manager.app    # the icon you click
+~/.claude/skill-manager/
+  server.ts                        # tiny local server, only reachable from your Mac
+  index.html                       # the page
+  open.sh                          # starts the server if needed and opens the page
+```
+
+**Needs:** macOS and [Bun](https://bun.sh).
+
+**Remove it:** ask Claude to uninstall the skill manager, or run:
 
 ```bash
-npx skills add nolly-studio/agent-skills --skill bootstrap-agents-md -y
-npx skills add nolly-studio/agent-skills --skill design-md -y
+lsof -t -iTCP:4477 -sTCP:LISTEN | xargs kill; rm -rf "/Applications/Skill Manager.app" ~/.claude/skill-manager
+```
+
+---
+
+## dock-app
+
+**Turn any file or setting on your Mac into an app you open from the Dock.**
+
+The skill manager above was built with this skill. Use it whenever you want buttons and switches for something on your own machine: an app's settings, dotfiles, a folder of notes, a local database. A web page on the internet cannot touch those files. A dock app can, and it never leaves your Mac.
+
+```mermaid
+flowchart LR
+  A["Click the icon<br/>in your Dock"] --> B["Page opens in<br/>your browser"]
+  B <-- "your clicks" --> C["Small server on your Mac<br/>(starts if needed)"]
+  C <-- "reads and writes" --> D[("Your files")]
+```
+
+### Ask for it
+
+```
+Make a Dock app for editing my ~/.gitconfig
+```
+
+```
+Give me a toggle page for the feature flags in config/flags.json, and put it in my Dock
+```
+
+### What your agent does
+
+1. **Finds the right thing to change.** It looks for the app's official setting before touching any files.
+2. **Builds a tiny server and one page,** starting from the files in `skills/dock-app/assets/`. No Electron, no build step.
+3. **Wraps it in a Mac app** with `scripts/make-app.sh` and, if you say yes, pins it to your Dock.
+4. **Tests it like you would use it:** opens it from a cold start, makes a change, checks the file, puts it back, and looks at the page in light mode, dark mode and phone width.
+
+**Needs:** macOS and [Bun](https://bun.sh).
+
+---
+
+## bootstrap-agents-md
+
+**Give any repo the docs an AI agent needs to work in it well.**
+
+It reads the repo first, then writes each doc from what it finds, so nothing is copied in blind.
+
+```
+AGENTS.md                          # the entry point agents read first
+CLAUDE.md                          # symlink to AGENTS.md
+docs/
+  agents/
+    architecture.md                # how the system really fits together
+    code-style.md                  # the conventions the code already follows
+    lessons-learned.md             # grows as agents learn non-obvious things
+  plans/
+    README.md                      # how longer plans are written and kept
+  release.md                       # how the project ships
+.agents/
+  skills/
+    plan-mode/SKILL.md             # how to plan before big changes
+    code-review/SKILL.md           # how to review with context
+```
+
+**Use it when** you set up a new repo for agents, move a proven setup to another codebase, or merge scattered `AGENTS.md`, `CLAUDE.md` and Cursor rules into one place.
+
+**Principles:** every claim traces back to the repo; port the system, rewrite the content; docs stay alive as agents add lessons; commands come from the repo's own scripts; plan before large changes; short and accurate beats long and impressive.
+
+---
+
+## design-md
+
+**Write down how your UI should look, so agents build on-brand.**
+
+It creates a root `DESIGN.md` (colors, type, spacing, components, motion) plus a portable `frontend-design` skill. It checks the repo first and picks one of three modes, so it never overwrites a design you already have:
+
+| Mode | When | What happens |
+| --- | --- | --- |
+| **Document** | The repo already has a design language | Writes it down, citing real files and tokens. Nothing in the design changes |
+| **Merge** | Design docs already exist | Keeps the unique rules, removes duplicates, leaves one source of truth |
+| **Propose** | A new project | Writes a one-page proposal and **waits for your approval** before the full doc |
+
+```
+DESIGN.md                              # the design contract
+.agents/skills/frontend-design/SKILL.md
+docs/plans/design-language.md          # propose mode only
+```
+
+**Principles:** the doc follows the code or your approval, never invention; describing is not a mandate to restyle; limits you can check ("one accent color per view") over vibes; every token named must exist in the code.
+
+---
+
+## Install
+
+**All skills** (you pick in a prompt):
+
+```bash
+npx skills add nolly-studio/agent-skills
+```
+
+**One skill**, no prompts:
+
+```bash
 npx skills add nolly-studio/agent-skills --skill skill-manager -y
 npx skills add nolly-studio/agent-skills --skill dock-app -y
+npx skills add nolly-studio/agent-skills --skill bootstrap-agents-md -y
+npx skills add nolly-studio/agent-skills --skill design-md -y
 ```
 
-### Claude Code (manual)
+**By hand** for Claude Code: copy a folder from `skills/` into `~/.claude/skills/`.
 
-```bash
-cp -r skills/bootstrap-agents-md ~/.claude/skills/
-cp -r skills/design-md ~/.claude/skills/
-cp -r skills/skill-manager ~/.claude/skills/
-cp -r skills/dock-app ~/.claude/skills/
-```
+**claude.ai:** add the skill's `SKILL.md` to project knowledge, or paste it into the chat.
 
-### claude.ai
+Once installed, you do not call a skill directly. Ask for what you want, and the agent uses the matching skill.
 
-Add the skill to project knowledge or paste `SKILL.md` contents into the conversation.
-
-## Usage
-
-Skills are automatically available once installed. The agent uses them when relevant tasks are detected.
-
-**Examples:**
-
-```
-Bootstrap the agent system for this repo
-```
-
-```
-Set up AGENTS.md and agent docs following our standard structure
-```
-
-```
-Port our agent operating system to this project
-```
-
-```
-Add a DESIGN.md documenting our design language
-```
-
-```
-Give me a toggle UI for my Claude Code skills
-```
-
-```
-Make a Dock app for editing this config file
-```
-
-## Skill Structure
+## What is in this repo
 
 ```
 skills/
-  bootstrap-agents-md/
-    SKILL.md                             # instructions for the agent
-    references/
-      agents-md-template.md              # AGENTS.md skeleton
-      architecture-template.md           # docs/agents/architecture.md
-      code-style-template.md             # docs/agents/code-style.md
-      lessons-learned-template.md        # docs/agents/lessons-learned.md
-      plans-readme-template.md           # docs/plans/README.md
-      release-template.md                # docs/release.md
-      skill-plan-mode.md                 # portable plan-mode skill
-      skill-code-review.md               # portable code-review skill
-  design-md/
-    SKILL.md                             # audit → classify → gate → write process
-    references/
-      design-md-template.md              # DESIGN.md skeleton
-      skill-frontend-design.md           # portable frontend-design craft skill
   skill-manager/
-    SKILL.md                             # install, verify, uninstall
-    scripts/install.sh                   # copies assets, builds the app, optional Dock pin
-    assets/                              # server.ts, index.html, open.sh
+    SKILL.md                 # install, check, remove
+    scripts/install.sh       # copies the files, builds the app, optional Dock pin
+    assets/                  # server.ts, index.html, open.sh
   dock-app/
-    SKILL.md                             # source of truth -> build -> wrap -> verify
-    scripts/make-app.sh                  # wraps any launcher in a .app, optional Dock pin
-    assets/                              # starter server.ts and open.sh
+    SKILL.md                 # find the setting, build, wrap, test
+    scripts/make-app.sh      # turns any launcher script into a Mac app
+    assets/                  # starter server.ts and open.sh
+  bootstrap-agents-md/
+    SKILL.md
+    references/              # templates for each doc it writes
+  design-md/
+    SKILL.md
+    references/              # DESIGN.md and frontend-design templates
+images/                      # screenshots for this README
 ```
-
-The agent reads `SKILL.md` for the process (evidence gathering, deliverables, verification pass) and pulls each template from `references/` at the step that uses it.
 
 ## License
 
