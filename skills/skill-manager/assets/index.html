@@ -60,18 +60,33 @@
   .search { flex: 1 1 100%; min-width: 0; height: 34px; padding: 0 12px; border-radius: 8px;
     border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; }
   .search::placeholder { color: var(--faint); }
-  .chips { display: flex; gap: 4px; margin-right: auto; }
+  .chips { display: flex; gap: 4px; }
   button { font: inherit; color: inherit; cursor: pointer; }
-  .chip, .bulk { height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line);
+  .chip { height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line);
     background: var(--surface); color: var(--muted); white-space: nowrap; }
   .chip[aria-pressed="true"] { color: var(--text); border-color: var(--text); }
-  .bulk:hover, .chip:hover { color: var(--text); }
+  .chip:hover { color: var(--text); }
   :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); cursor: pointer; }
 
   .list { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
-  .row { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center;
+  .bulkbar { position: sticky; top: 0; z-index: 1; display: flex; gap: 12px; align-items: center;
+    flex-wrap: wrap; padding: 10px 14px; background: var(--surface); border-bottom: 1px solid var(--line);
+    border-radius: 10px 10px 0 0; }
+  .bulkbar.active { background: var(--track); }
+  .picked { display: flex; gap: 12px; align-items: center; margin-right: auto; }
+  .pick { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); cursor: pointer; }
+  .pick b { color: var(--text); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .link { border: 0; background: none; padding: 0; color: var(--muted); font-size: 13px;
+    text-decoration: underline; text-underline-offset: 2px; }
+  .link:hover { color: var(--text); }
+  .setto { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
+  .bulkbar .seg { background: var(--bg); }
+  .bulkbar.active .seg { background: var(--surface); }
+  .row { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center;
     padding: 12px 14px; border-top: 1px solid var(--line); }
-  .row:first-child { border-top: 0; }
+  #list > .row:first-child { border-top: 0; }
+  .row.selected { background: color-mix(in srgb, var(--focus) 6%, var(--surface)); }
   .row.dim .name, .row.dim .desc { color: var(--faint); }
   .name { font: 500 13px ui-monospace, "SF Mono", Menlo, monospace; display: flex; gap: 8px; align-items: baseline; }
   .size { font: 11px ui-sans-serif, system-ui; color: var(--faint); font-variant-numeric: tabular-nums; }
@@ -83,6 +98,7 @@
   .seg button { border: 0; background: transparent; color: var(--muted); font-size: 12px;
     height: 26px; padding: 0 10px; border-radius: 6px; white-space: nowrap; }
   .seg button:hover { color: var(--text); }
+  .seg button:disabled { color: var(--faint); cursor: default; }
   .seg button[aria-checked="true"] { background: var(--surface); color: var(--text);
     box-shadow: 0 1px 2px rgb(0 0 0 / 0.12); }
   .seg button[data-mode="on"][aria-checked="true"] { color: var(--on); }
@@ -101,7 +117,10 @@
   @media (max-width: 640px) {
     main { padding-top: 24px; }
     .stats { grid-template-columns: repeat(2, 1fr); }
-    .row { grid-template-columns: 1fr; gap: 8px; }
+    .row { grid-template-columns: auto 1fr; gap: 8px 12px; }
+    .row .seg { grid-column: 2; }
+    .setto { width: 100%; }
+    .setto > span { display: none; }
     .seg { width: 100%; grid-template-columns: repeat(4, 1fr); }
     .seg button { padding: 0 4px; }
   }
@@ -127,11 +146,29 @@
       <button class="chip" data-filter="limited" aria-pressed="false">Limited</button>
       <button class="chip" data-filter="off" aria-pressed="false">Off</button>
     </div>
-    <button class="bulk" data-bulk="off">Turn shown off</button>
-    <button class="bulk" data-bulk="on">Turn shown on</button>
   </div>
 
-  <div class="list" id="list" aria-live="polite"></div>
+  <div class="list">
+    <div class="bulkbar" id="bulkbar">
+      <div class="picked">
+        <label class="pick">
+          <input type="checkbox" id="all" aria-label="Select all shown skills">
+          <span id="pick-label"></span>
+        </label>
+        <button class="link" id="clear" hidden>Clear</button>
+      </div>
+      <div class="setto">
+        <span id="setto-label"></span>
+        <div class="seg" role="group" aria-label="Set mode for several skills">
+          <button data-bulk="on">On</button>
+          <button data-bulk="name-only">Name only</button>
+          <button data-bulk="user-invocable-only">Slash only</button>
+          <button data-bulk="off">Off</button>
+        </div>
+      </div>
+    </div>
+    <div id="list" aria-live="polite"></div>
+  </div>
 
   <div class="legend">
     <div><b>On</b>: listed with its description, so Claude can pick it on its own or you can run <code>/name</code>.</div>
@@ -149,8 +186,13 @@
     ["user-invocable-only", "Slash only"],
     ["off", "Off"],
   ];
+  const LABEL = Object.fromEntries(MODES);
   let skills = [];
   let filter = "all";
+  // Selection survives search and filter changes, so one bulk change can
+  // cover picks from several searches.
+  const selected = new Set();
+  let lastPicked = null;
   const $ = (id) => document.getElementById(id);
 
   const matches = (s) => {
@@ -168,7 +210,8 @@
     const shown = skills.filter(matches);
     $("list").innerHTML = shown.length
       ? shown.map((s) => `
-        <div class="row${s.mode === "off" ? " dim" : ""}">
+        <div class="row${s.mode === "off" ? " dim" : ""}${selected.has(s.name) ? " selected" : ""}">
+          <input type="checkbox" data-pick="${esc(s.name)}" aria-label="Select ${esc(s.name)}"${selected.has(s.name) ? " checked" : ""}>
           <div>
             <div class="name">${esc(s.name)}<span class="size">${s.description.length.toLocaleString()} chars</span></div>
             <div class="desc" title="${esc(s.description)}">${esc(s.description) || "No description"}</div>
@@ -178,6 +221,27 @@
           </div>
         </div>`).join("")
       : `<div class="empty">No skills match.</div>`;
+
+    const picked = shown.filter((s) => selected.has(s.name)).length;
+    $("all").checked = shown.length > 0 && picked === shown.length;
+    $("all").indeterminate = picked > 0 && picked < shown.length;
+    $("all").disabled = shown.length === 0;
+    $("bulkbar").classList.toggle("active", selected.size > 0);
+    $("clear").hidden = selected.size === 0;
+    const idle = selected.size === 0 && shown.length === 0;
+    document.querySelectorAll("button[data-bulk]").forEach((b) => { b.disabled = idle; });
+    if (idle) {
+      $("pick-label").textContent = "No skills shown";
+      $("setto-label").textContent = "";
+    } else if (selected.size) {
+      $("pick-label").innerHTML = `<b>${selected.size}</b> selected`;
+      $("setto-label").textContent = "Set selected to";
+    } else {
+      const every = shown.length === skills.length;
+      $("pick-label").textContent = every ? "Select all" : `Select ${shown.length} shown`;
+      $("setto-label").textContent = every ? `Set all ${skills.length} to` : `Set ${shown.length} shown to`;
+    }
+
     $("s-total").textContent = skills.length;
     $("s-on").textContent = skills.filter((s) => s.mode === "on").length;
     $("s-off").textContent = skills.filter((s) => s.mode === "off").length;
@@ -220,13 +284,44 @@
       render();
     }),
   );
-  document.querySelectorAll(".bulk").forEach((b) =>
-    b.addEventListener("click", () => {
+  // Checkboxes: click to pick one, shift-click to pick the range from the last pick.
+  $("list").addEventListener("click", (e) => {
+    const box = e.target.closest("input[data-pick]");
+    if (!box) return;
+    const names = skills.filter(matches).map((s) => s.name);
+    const from = names.indexOf(lastPicked);
+    const to = names.indexOf(box.dataset.pick);
+    const range = e.shiftKey && from !== -1
+      ? names.slice(Math.min(from, to), Math.max(from, to) + 1)
+      : [box.dataset.pick];
+    for (const name of range) box.checked ? selected.add(name) : selected.delete(name);
+    lastPicked = box.dataset.pick;
+    render();
+  });
+  $("all").addEventListener("change", () => {
+    for (const s of skills.filter(matches)) $("all").checked ? selected.add(s.name) : selected.delete(s.name);
+    render();
+  });
+  const clearSelection = () => {
+    selected.clear();
+    lastPicked = null;
+    render();
+  };
+  $("clear").addEventListener("click", clearSelection);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && selected.size) clearSelection();
+  });
+
+  // Bulk set: applies to the selection, or to every shown skill when nothing is selected.
+  document.querySelectorAll("button[data-bulk]").forEach((b) =>
+    b.addEventListener("click", async () => {
       const mode = b.dataset.bulk;
-      const targets = skills.filter(matches).filter((s) => s.mode !== mode);
-      if (!targets.length) return toast("Nothing to change");
-      if (!confirm(`Set ${targets.length} skills to ${mode}?`)) return;
-      save(Object.fromEntries(targets.map((s) => [s.name, mode])));
+      const pool = selected.size ? skills.filter((s) => selected.has(s.name)) : skills.filter(matches);
+      const targets = pool.filter((s) => s.mode !== mode);
+      if (!targets.length) return toast(`Already ${LABEL[mode]}`);
+      if (targets.length > 1 && !confirm(`Set ${targets.length} skills to ${LABEL[mode]}?`)) return;
+      await save(Object.fromEntries(targets.map((s) => [s.name, mode])));
+      clearSelection();
     }),
   );
   $("q").addEventListener("input", render);

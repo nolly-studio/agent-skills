@@ -21,14 +21,14 @@ npx skills add nolly-studio/agent-skills
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="images/skill-manager-dark.png">
-  <img alt="The skill manager page: a list of skills, each with On, Name only, Slash only and Off buttons, under a summary of how many are on and how many characters they add to each session" src="images/skill-manager-light.png">
+  <img alt="The skill manager page: a list of skills, each with a checkbox and On, Name only, Slash only and Off buttons. Two skills are selected and a bar at the top offers to set the selected skills to any mode" src="images/skill-manager-light.png">
 </picture>
 
-Every skill you install adds its description to every Claude Code session, whether you use it that day or not. With 100 skills, that is tens of thousands of characters before you type a word. This skill installs a small Mac app that shows each skill, how much it costs, and a switch to turn it down or off.
+Every skill you install adds its description to every Claude Code session, whether you use it that day or not. With 100 skills, that is tens of thousands of characters before you type a word. This skill installs a small Mac app that shows each skill, how much it costs, and a switch to turn it down or off, one at a time or all at once.
 
 ### See it work
 
-![Turning two skills off, setting one to slash only, then filtering to the skills that are off](images/skill-manager-demo.gif)
+![Setting all 14 skills to slash only in one click, then shift-clicking to select three and turning them off](images/skill-manager-demo.gif)
 
 ### Get it in 3 steps
 
@@ -42,6 +42,14 @@ Every skill you install adds its description to every Claude Code session, wheth
 3. **Click the Skill Manager icon** in your Dock. The page opens in your browser.
 
 Changes save the moment you click. New sessions use them.
+
+### Change many at once
+
+- **Everything:** the bar above the list reads "Set all 115 to". Click **Slash only** and every skill switches.
+- **A selection:** tick skills, or click one and shift-click another to select the range between them. The bar switches to "Set selected to".
+- **A search or filter:** with nothing ticked, the bar acts on what is shown, like "Set 12 shown to".
+
+Picks stay while you search, so you can collect skills from several searches and change them together. Press Esc to clear.
 
 ### The four switches
 
